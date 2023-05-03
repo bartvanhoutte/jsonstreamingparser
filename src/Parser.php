@@ -14,6 +14,10 @@ class Parser extends AbstractParser implements StoppableInterface
 
     private $stopParsing = false;
 
+    private $bufferSize;
+
+    private $lineEnding;
+
     public function __construct(
       $stream,
       ListenerInterface $listener,
@@ -21,13 +25,15 @@ class Parser extends AbstractParser implements StoppableInterface
       bool $emitWhitespace = false,
       int $bufferSize = 8192
     ) {
-        parent::__construct($listener, $lineEnding, $emitWhitespace, $bufferSize);
+        parent::__construct($listener, $emitWhitespace);
 
         if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
             throw new \InvalidArgumentException('Invalid stream provided');
         }
 
         $this->stream = $stream;
+        $this->lineEnding = $lineEnding;
+        $this->bufferSize = $bufferSize;
     }
 
     public function parse(): void
