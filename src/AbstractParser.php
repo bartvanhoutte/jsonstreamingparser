@@ -62,11 +62,6 @@ abstract class AbstractParser
     private $buffer = '';
 
     /**
-     * @var int
-     */
-    protected $bufferSize;
-
-    /**
      * @var string[]
      */
     private $unicodeBuffer = [];
@@ -82,11 +77,6 @@ abstract class AbstractParser
     private $unicodeEscapeBuffer = '';
 
     /**
-     * @var string
-     */
-    protected $lineEnding;
-
-    /**
      * @var int
      */
     protected $charNumber;
@@ -100,9 +90,7 @@ abstract class AbstractParser
 
     public function __construct(
       ListenerInterface $listener,
-      string $lineEnding = "\n",
-      bool $emitWhitespace = false,
-      int $bufferSize = 8192
+      bool $emitWhitespace = false
     ) {
         $this->listener = $listener;
 
@@ -110,10 +98,8 @@ abstract class AbstractParser
             $this->listener->setParser($this);
         }
 
-        $this->lineEnding = $lineEnding;
         $this->emitWhitespace = $emitWhitespace;
         $this->state = self::STATE_START_DOCUMENT;
-        $this->bufferSize = $bufferSize;
     }
 
     protected function consumeChar(string $char): void

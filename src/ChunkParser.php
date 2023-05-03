@@ -11,11 +11,9 @@ class ChunkParser extends AbstractParser
 
     public function __construct(
       ListenerInterface $listener,
-      string $lineEnding = "\n",
-      bool $emitWhitespace = false,
-      int $bufferSize = 8192
+      bool $emitWhitespace = false
     ) {
-        parent::__construct($listener, $lineEnding, $emitWhitespace, $bufferSize);
+        parent::__construct($listener, $emitWhitespace);
 
         $this->lineNumber = 1;
         $this->charNumber = 1;
