@@ -557,4 +557,10 @@ abstract class AbstractParser
     {
         throw new ParsingException($this->lineNumber, $this->charNumber, $message);
     }
+
+    public function getCharNumber(): int
+    {
+        return $this->charNumber;
+    }
+
 }

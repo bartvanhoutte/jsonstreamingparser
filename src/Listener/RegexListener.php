@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace JsonStreamingParser\Listener;
 
+use JsonStreamingParser\AbstractParser;
+
 /**
  * Allow to select elements from a JSON being loaded via a regex expression.
  * As the JSON is loaded you can use expressions such as /name to select
@@ -41,14 +43,16 @@ namespace JsonStreamingParser\Listener;
  *
  * @author NigelRen <nigelrel3@yahoo.co.uk>
  */
-class RegexListener implements ListenerInterface
+class RegexListener implements ParserAwareInterface, ListenerInterface
 {
+
     /**
      * Constant to flag that it is an object level.
      *
      * @var int
      */
     const OBJECT = -1;
+
     /**
      * Constant to flag that it is an array level.
      *
@@ -62,6 +66,7 @@ class RegexListener implements ListenerInterface
      * @var callable[] - [regex => callable, ...]
      */
     private $dataMatch;
+
     /**
      * Path to the current data item, used to match with $dataMatch for extract.
      * Path is made up of keys for each level of structure.
@@ -125,6 +130,10 @@ class RegexListener implements ListenerInterface
      */
     private $objectEncountered = false;
 
+    private $parser;
+
+    private $pathOffset = [];
+
     /**
      * @param array $dataMatch - [regex => closure()] format
      */
@@ -146,16 +155,17 @@ class RegexListener implements ListenerInterface
     /**
      * {@inheritdoc}
      *
+     * @param int $index - set to 0 for arrays (used for index number)
+     *
      * @see \JsonStreamingParser\Listener\ListenerInterface::startObject()
      *
-     * @param int $index - set to 0 for arrays (used for index number)
      */
     public function startObject($index = self::OBJECT): void
     {
         // Does the hierarchy need updating?
         if ($index !== self::OBJECT
-            || $this->pathLength !== 0
-            || !empty($this->label)
+          || $this->pathLength !== 0
+          || !empty($this->label)
         ) {
             $this->path[] = $this->label ?? '';
             $this->pathIndex[] = $index;
@@ -170,12 +180,13 @@ class RegexListener implements ListenerInterface
             foreach (array_keys($this->dataMatch) as $pathReg) {
                 // Check if matches regex, if this is an array, then check
                 // if matches with regex/0 when looking at first element.
-                if (preg_match('#^'.$pathReg.'$#', $path)
-                    || (preg_match('#^'.$pathReg.'/0$#', $path)
-                        && $this->pathIndex[$this->pathLength - 1] === 0
-                    )
+                if (preg_match('#^' . $pathReg . '$#', $path)
+                  || (preg_match('#^' . $pathReg . '/0$#', $path)
+                    && $this->pathIndex[$this->pathLength - 1] === 0
+                  )
                 ) {
                     $this->levelInterest = $this->pathLength;
+                    $this->pathOffset[$path] = $this->parser->getCharNumber();
                 }
             }
         }
@@ -197,7 +208,7 @@ class RegexListener implements ListenerInterface
         }
         // Update array index if neccessary.
         if ($this->pathLength > 0
-            && $this->pathIndex[$this->pathLength - 1] !== self::OBJECT
+          && $this->pathIndex[$this->pathLength - 1] !== self::OBJECT
         ) {
             $this->pathIndex[$this->pathLength - 1]++;
         }
@@ -235,8 +246,13 @@ class RegexListener implements ListenerInterface
         // Check the path against the required matches
         foreach ($this->dataMatch as $pathReg => $closure) {
             $matches = [];
-            if (preg_match('#^'.$pathReg.'$#', $path, $matches)) {
-                $closure($value, $matches[1] ?? []);
+            if (preg_match('#^' . $pathReg . '$#', $path, $matches)) {
+                $closure(
+                  $value,
+                  $matches[1] ?? [],
+                  $this->pathOffset[$path],
+                  $this->parser->getCharNumber() - $this->pathOffset[$path]
+                );
             }
         }
 
@@ -256,8 +272,8 @@ class RegexListener implements ListenerInterface
 
         // Update array index if neccessary.
         if ($this->objectEncountered === false
-            && $this->pathLength > 0
-            && $this->pathIndex[$this->pathLength - 1] !== self::OBJECT
+          && $this->pathLength > 0
+          && $this->pathIndex[$this->pathLength - 1] !== self::OBJECT
         ) {
             $this->pathIndex[$this->pathLength - 1]++;
         }
@@ -279,18 +295,24 @@ class RegexListener implements ListenerInterface
         $path = '';
         foreach ($this->path as $key => $pathElement) {
             if (!empty($pathElement)) {
-                $path .= '/'.$pathElement;
+                $path .= '/' . $pathElement;
             }
             // Add in array index if present
             if ($this->pathIndex[$key] !== self::OBJECT) {
-                $path .= '/'.$this->pathIndex[$key];
+                $path .= '/' . $this->pathIndex[$key];
             }
         }
         // Add in current label if present
         if ($this->label) {
-            $path .= '/'.$this->label;
+            $path .= '/' . $this->label;
         }
 
         return $path;
     }
+
+    public function setParser(AbstractParser $parser): void
+    {
+        $this->parser = $parser;
+    }
+
 }
