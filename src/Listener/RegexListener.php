@@ -189,6 +189,13 @@ class RegexListener implements ParserAwareInterface, ListenerInterface
                     $this->pathOffset[$path] = $this->parser->getCharNumber();
                 }
             }
+        } else {
+            $path = $this->getPath();
+            foreach (array_keys($this->dataMatch) as $pathReg) {
+                if (preg_match('#^' . $pathReg . '$#', $path) && !array_key_exists($path, $this->pathOffset)) {
+                    $this->pathOffset[$path] = $this->parser->getCharNumber() - 1;
+                }
+            }
         }
 
         // Set object flag (Only when processing objects and not arrays).
