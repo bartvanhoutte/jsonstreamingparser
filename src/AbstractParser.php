@@ -6,7 +6,7 @@ namespace JsonStreamingParser;
 
 use JsonStreamingParser\Exception\ParsingException;
 use JsonStreamingParser\Listener\ListenerInterface;
-use JsonStreamingParser\Test\Listener\ParserAwareListener;
+use JsonStreamingParser\Listener\ParserAwareInterface;
 
 abstract class AbstractParser
 {
@@ -94,7 +94,7 @@ abstract class AbstractParser
     ) {
         $this->listener = $listener;
 
-        if ($this->listener instanceof ParserAwareListener) {
+        if ($this->listener instanceof ParserAwareInterface) {
             $this->listener->setParser($this);
         }
 
